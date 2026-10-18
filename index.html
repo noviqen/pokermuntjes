@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pokermuntjes</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#123524">
+  <link rel="icon" href="icon-192.png?v=1" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icon-180.png?v=1">
+  <link rel="manifest" href="manifest.json?v=1">
+  <meta name="apple-mobile-web-app-title" content="Pokermuntjes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+  <!-- 1. Start -->
+  <section id="start" class="scherm" hidden>
+    <header class="kop"><h1><span class="logo-munt"></span>Pokermuntjes</h1></header>
+    <div class="inhoud">
+      <div class="kaart">
+        <div class="regel">
+          <span class="label">Spelers</span>
+          <div class="stapper">
+            <button type="button" id="minSpeler" aria-label="Eén speler minder">−</button>
+            <output id="aantal">4</output>
+            <button type="button" id="plusSpeler" aria-label="Eén speler meer">+</button>
+          </div>
+        </div>
+        <div id="namen" class="namen"></div>
+      </div>
+
+      <div class="kaart">
+        <div class="regel"><span class="label">Iedereen begint met</span><b id="stapelWaarde" class="bedrag"></b></div>
+        <div id="stapel" class="munt-rijen"></div>
+      </div>
+    </div>
+    <footer class="voet"><button type="button" id="beginKnop" class="hoofdknop">Spel starten</button></footer>
+  </section>
+
+  <!-- 2. Spel: inkopen bijhouden -->
+  <section id="spel" class="scherm" hidden>
+    <header class="kop">
+      <h1><span class="logo-munt"></span>Pokermuntjes</h1>
+      <button type="button" id="nieuwKnop" class="kopknop">Nieuw spel</button>
+    </header>
+    <div class="inhoud">
+      <div class="pot">
+        <span>In de pot</span>
+        <b id="pot"></b>
+        <small id="potUitleg"></small>
+      </div>
+      <ul id="spelers" class="spelers"></ul>
+    </div>
+    <footer class="voet"><button type="button" id="naarTellen" class="hoofdknop">Einde spel: muntjes tellen</button></footer>
+  </section>
+
+  <!-- 3. Tellen per speler -->
+  <section id="tellen" class="scherm" hidden>
+    <header class="kop">
+      <button type="button" id="telTerug" class="kopknop">‹ Terug</button>
+      <span id="telStap" class="stap"></span>
+    </header>
+    <div class="inhoud">
+      <h2 id="telNaam" class="tel-naam"></h2>
+      <p class="uitleg">Hoeveel muntjes heeft <span id="telNaam2"></span> nu?</p>
+      <div id="telRijen" class="munt-rijen kaart"></div>
+      <div class="tel-som">
+        <div><span>Heeft</span><b id="telWaarde"></b></div>
+        <div><span>Nog niet geteld</span><b id="telRest"></b></div>
+      </div>
+    </div>
+    <footer class="voet"><button type="button" id="telVerder" class="hoofdknop">Volgende</button></footer>
+  </section>
+
+  <!-- 4. Uitslag -->
+  <section id="uitslag" class="scherm" hidden>
+    <header class="kop">
+      <button type="button" id="uitTerug" class="kopknop">‹ Tellen</button>
+      <span class="stap">Afrekenen</span>
+    </header>
+    <div class="inhoud">
+      <p id="verschil" class="waarschuwing" hidden></p>
+      <ul id="stand" class="stand"></ul>
+      <h2 class="kopje">Wie betaalt wie</h2>
+      <ul id="betalen" class="betalen"></ul>
+    </div>
+    <footer class="voet"><button type="button" id="uitNieuw" class="hoofdknop">Nieuw spel</button></footer>
+  </section>
+
+  <!-- Bevestigen nieuw spel -->
+  <div id="nieuwLaag" class="laag" hidden>
+    <div class="paneel">
+      <h2>Nieuw spel beginnen?</h2>
+      <p class="uitleg">Het huidige spel wordt gewist. Dezelfde spelers en beginstapel blijven klaarstaan.</p>
+      <div class="rij">
+        <button type="button" class="tweede" data-sluit>Annuleren</button>
+        <button type="button" id="nieuwJa" class="hoofdknop">Nieuw spel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="melding" class="melding" hidden><span id="meldTekst"></span><button type="button" id="ongedaan">Ongedaan</button></div>
+
+  <script src="app.js?v=1"></script>
+</body>
+</html>
