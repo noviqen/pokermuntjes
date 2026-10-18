@@ -160,6 +160,18 @@ button:disabled { opacity: .35; cursor: default; }
 .rij { display: flex; gap: 10px; margin-top: 18px; }
 .rij > * { flex: 1; }
 .tweede { min-height: 56px; border-radius: 16px; background: #eef2ef; font-weight: 650; }
+.voet.twee { display: flex; gap: 10px; }
+.voet.twee .tweede { flex: 0 0 40%; }
+.voet.twee .hoofdknop { flex: 1; }
+.uitdelen { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.uitdelen span { font-size: 12px; font-weight: 700; color: #fff; border-radius: 9px; padding: 1px 7px; background: #888; font-variant-numeric: tabular-nums; }
+.uitdelen .rood { background: #c8352a; } .uitdelen .blauw { background: #2457b8; } .uitdelen .groen { background: #1d8a4c; }
+.uitdelen .zwart { background: #262a2e; } .uitdelen .paars { background: #7240b3; }
+.dagen li { flex-direction: column; align-items: stretch; gap: 4px; }
+.dag-kop { display: flex; justify-content: space-between; font-weight: 700; }
+.dag-kop small { color: var(--zacht); font-weight: 500; font-size: 14px; }
+.dag-uitslag { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.dag-uitslag .plus { color: var(--plus); } .dag-uitslag .min { color: var(--min); }
 .melding {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(92px + env(safe-area-inset-bottom));

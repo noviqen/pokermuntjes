@@ -19,13 +19,22 @@ const leeg = () => Object.fromEntries(MUNTEN.map((m) => [m.c, 0]));
 const muntHtml = (m, extra = '') => `<span class="munt ${m.kleur} ${extra}" aria-hidden="true"><span>${m.tekst}</span></span>`;
 
 let staat = laad();
-let laatste = null; // voor Ongedaan bij inkopen
+let vorige = null; // stand vóór de laatste actie, voor Ongedaan
 let meldTimer = null;
 
 function laad() {
   try {
     const s = JSON.parse(localStorage.getItem(OPSLAG));
-    if (s && s.fase && s.stapel && Array.isArray(s.spelers)) return s;
+    if (s && s.fase && s.stapel && Array.isArray(s.spelers)) {
+      // Spellen van vóór de dagen-functie aanvullen
+      s.dag = s.dag || 1;
+      s.dagen = s.dagen || [];
+      for (const p of s.spelers) {
+        p.stand = p.stand || { ...s.stapel };
+        p.inkStart = p.inkStart || 1;
+      }
+      return s;
+    }
   } catch (e) { /* kapotte opslag: opnieuw beginnen */ }
   return { fase: 'start', namen: [], aantal: 4, stapel: Object.fromEntries(MUNTEN.map((m) => [m.c, m.begin])), spelers: [], tel: 0 };
 }
@@ -112,7 +121,9 @@ $('namen').addEventListener('input', () => { bewaarNamen(); bewaar(); });
 
 $('beginKnop').onclick = () => {
   bewaarNamen();
-  staat.spelers = staat.namen.map((naam, i) => ({ naam: naam || 'Speler ' + (i + 1), inkopen: 1, eind: leeg() }));
+  staat.spelers = staat.namen.map((naam, i) => ({ naam: naam || 'Speler ' + (i + 1), inkopen: 1, inkStart: 1, stand: { ...staat.stapel }, eind: leeg() }));
+  staat.dag = 1;
+  staat.dagen = [];
   staat.waard = waarde(staat.stapel); // waarde van één inkoop, vast voor dit spel
   staat.tel = 0;
   staat.fase = 'spel';
@@ -132,27 +143,43 @@ function tekenSpel() {
     li.innerHTML = `<div class="sp-info"><span class="naam"></span><span class="inleg"></span></div>
       <button type="button" class="inkoop">+ Inkopen</button>`;
     li.querySelector('.naam').textContent = s.naam;
-    li.querySelector('.inleg').textContent = euro(s.inkopen * staat.waard) + (s.inkopen > 1 ? ` · ${s.inkopen}× gekocht` : ' · beginstapel');
+    if (staat.dag > 1) {
+      const vandaag = s.inkopen - s.inkStart;
+      li.querySelector('.inleg').textContent = `begint met ${euro(waarde(s.stand))}` + (vandaag ? ` · vandaag ${vandaag}× gekocht` : '');
+      const rij = document.createElement('span');
+      rij.className = 'uitdelen';
+      for (const m of [...MUNTEN].reverse()) {
+        if (!s.stand[m.c]) continue;
+        const t = document.createElement('span');
+        t.className = m.kleur;
+        t.textContent = s.stand[m.c] + '× ' + m.tekst;
+        rij.appendChild(t);
+      }
+      li.querySelector('.sp-info').appendChild(rij);
+    } else {
+      li.querySelector('.inleg').textContent = euro(s.inkopen * staat.waard) + (s.inkopen > 1 ? ` · ${s.inkopen}× gekocht` : ' · beginstapel');
+    }
     li.querySelector('.inkoop').onclick = () => {
+      vorige = JSON.stringify(staat);
       s.inkopen++;
-      laatste = i;
       bewaar();
       tekenSpel();
       melden(s.naam + ' koopt in voor ' + euro(staat.waard), true);
     };
     lijst.appendChild(li);
   });
+  $('potKop').textContent = staat.dag > 1 ? `Dag ${staat.dag} · in de pot` : 'In de pot';
   $('pot').textContent = euro(totaal * staat.waard);
   const extra = totaal - staat.spelers.length;
   $('potUitleg').textContent = staat.spelers.length + ' spelers' + (extra ? ` · ${extra}× ingekocht` : '') + ' · inkoop ' + euro(staat.waard);
 }
 
 $('ongedaan').onclick = () => {
-  if (laatste === null) return;
-  const s = staat.spelers[laatste];
-  if (s && s.inkopen > 1) { s.inkopen--; bewaar(); tekenSpel(); }
-  laatste = null;
-  $('melding').hidden = true;
+  if (!vorige) return;
+  staat = JSON.parse(vorige);
+  vorige = null;
+  bewaar();
+  toon();
 };
 
 function melden(tekst, metOngedaan) {
@@ -179,7 +206,7 @@ function tekenTellen() {
   for (const m of MUNTEN) {
     rijen.appendChild(muntRij(m, s.eind[m.c] || 0, (v) => { s.eind[m.c] = v; bewaar(); tekenTelSom(); }));
   }
-  $('telVerder').textContent = i === staat.spelers.length - 1 ? 'Afrekenen' : 'Volgende: ' + staat.spelers[i + 1].naam;
+  $('telVerder').textContent = i === staat.spelers.length - 1 ? 'Klaar met tellen' : 'Volgende: ' + staat.spelers[i + 1].naam;
   tekenTelSom();
 }
 function tekenTelSom() {
@@ -231,6 +258,10 @@ function tekenUitslag() {
     ? `Er is ${euro(verschil)} méér geteld dan er in de pot zit (${euro(pot())}). Tel nog eens na.`
     : `Er is ${euro(-verschil)} minder geteld dan er in de pot zit (${euro(pot())}). Tel nog eens na.`;
 
+  $('uitKop').textContent = staat.dag > 1 ? `Stand na dag ${staat.dag}` : 'Stand';
+  $('morgen').disabled = verschil !== 0;
+  tekenDagen(verschil === 0);
+
   const saldi = staat.spelers.map((p) => ({ naam: p.naam, in: p.inkopen * staat.waard, eind: waarde(p.eind), saldo: waarde(p.eind) - p.inkopen * staat.waard }));
   const lijst = $('stand');
   lijst.innerHTML = '';
@@ -262,6 +293,49 @@ function tekenUitslag() {
     bet.appendChild(li);
   }
 }
+
+// Resultaat van vandaag per speler: eind − (begin van de dag + inkopen van vandaag)
+const dagSaldo = (p) => waarde(p.eind) - waarde(p.stand) - (p.inkopen - p.inkStart) * staat.waard;
+
+function tekenDagen(vandaagKlopt) {
+  const toon = staat.dag > 1;
+  $('dagenKop').hidden = !toon;
+  $('dagen').hidden = !toon;
+  if (!toon) return;
+  const rijen = staat.dagen.map((d, i) => ({ kop: 'Dag ' + (i + 1), datum: d.datum, uit: d.uitslag }));
+  if (vandaagKlopt) rijen.push({ kop: 'Dag ' + staat.dag, datum: Date.now(), uit: staat.spelers.map(dagSaldo) });
+  const lijst = $('dagen');
+  lijst.innerHTML = '';
+  for (const r of rijen.reverse()) {
+    const li = document.createElement('li');
+    li.innerHTML = '<div class="dag-kop"><span></span><small></small></div><div class="dag-uitslag"></div>';
+    li.querySelector('.dag-kop span').textContent = r.kop;
+    li.querySelector('.dag-kop small').textContent = new Date(r.datum).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+    r.uit.forEach((saldo, i) => {
+      const s = document.createElement('span');
+      s.textContent = staat.spelers[i].naam + ' ' + (saldo > 0 ? '+' : '') + euro(saldo);
+      s.className = saldo > 0 ? 'plus' : saldo < 0 ? 'min' : '';
+      li.querySelector('.dag-uitslag').appendChild(s);
+    });
+    lijst.appendChild(li);
+  }
+}
+
+// Dag afsluiten: iedereen begint morgen met wat hij nu heeft
+$('morgen').onclick = () => {
+  vorige = JSON.stringify(staat);
+  staat.dagen.push({ datum: Date.now(), uitslag: staat.spelers.map(dagSaldo) });
+  for (const p of staat.spelers) {
+    p.stand = { ...p.eind };
+    p.inkStart = p.inkopen;
+    p.eind = leeg();
+  }
+  staat.dag++;
+  staat.fase = 'spel';
+  bewaar();
+  toon();
+  melden(`Dag ${staat.dag - 1} bewaard. Volgende keer verder met dag ${staat.dag}.`, true);
+};
 
 $('uitTerug').onclick = () => { staat.fase = 'tellen'; staat.tel = staat.spelers.length - 1; bewaar(); toon(); };
 
