@@ -25,20 +25,32 @@ let meldTimer = null;
 function laad() {
   try {
     const s = JSON.parse(localStorage.getItem(OPSLAG));
-    if (s && s.fase && s.stapel && Array.isArray(s.spelers)) {
-      // Spellen van vóór de dagen-functie aanvullen
-      s.dag = s.dag || 1;
-      s.dagen = s.dagen || [];
-      for (const p of s.spelers) {
-        p.stand = p.stand || { ...s.stapel };
-        p.inkStart = p.inkStart || 1;
-      }
-      return s;
-    }
+    if (s && s.fase && s.stapel && Array.isArray(s.spelers)) return laadAanvullen(s);
   } catch (e) { /* kapotte opslag: opnieuw beginnen */ }
   return { fase: 'start', namen: [], aantal: 4, stapel: Object.fromEntries(MUNTEN.map((m) => [m.c, m.begin])), spelers: [], tel: 0 };
 }
-function bewaar() { localStorage.setItem(OPSLAG, JSON.stringify(staat)); }
+// Spellen van vóór de dagen-functie aanvullen
+function laadAanvullen(s) {
+  s.dag = s.dag || 1;
+  s.dagen = s.dagen || [];
+  s.namen = s.namen || [];
+  s.aantal = s.aantal || 4;
+  for (const p of s.spelers) {
+    p.stand = p.stand || { ...s.stapel };
+    p.inkStart = p.inkStart || 1;
+    p.eind = p.eind || leeg();
+  }
+  return s;
+}
+
+function bewaar() {
+  staat.opgeslagen = Date.now();
+  try { localStorage.setItem(OPSLAG, JSON.stringify(staat)); } catch (e) {
+    melden('Opslaan lukt niet op deze telefoon. Staat privé-surfen aan?', false);
+  }
+}
+const klok = (t) => new Date(t).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+const datumTijd = (t) => new Date(t).toLocaleString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
 /* Stepper-rij met − [getal] +; getal is ook in te typen */
 function muntRij(m, aantal, opWijzig) {
@@ -168,6 +180,7 @@ function tekenSpel() {
     };
     lijst.appendChild(li);
   });
+  $('opgeslagen').textContent = staat.opgeslagen ? '✓ Automatisch opgeslagen om ' + klok(staat.opgeslagen) : '';
   $('potKop').textContent = staat.dag > 1 ? `Dag ${staat.dag} · in de pot` : 'In de pot';
   $('pot').textContent = euro(totaal * staat.waard);
   const extra = totaal - staat.spelers.length;
@@ -359,6 +372,62 @@ document.querySelectorAll('.laag').forEach((laag) => {
   });
 });
 
+/* ---------- Bewaren als link ---------- */
+// De hele stand gaat in het #-deel van de link; dat deel wordt nooit naar een server gestuurd.
+const naarLink = () => location.origin + location.pathname + '#s=' +
+  btoa(unescape(encodeURIComponent(JSON.stringify(staat)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+function uitLink(code) {
+  try {
+    const s = JSON.parse(decodeURIComponent(escape(atob(code.replace(/-/g, '+').replace(/_/g, '/')))));
+    return s && s.fase && s.stapel && Array.isArray(s.spelers) ? s : null;
+  } catch (e) { return null; }
+}
+
+$('bewaarKnop').onclick = () => { $('bewaarLaag').hidden = false; };
+$('deelKnop').onclick = async () => {
+  const url = naarLink();
+  const titel = 'Pokermuntjes – stand dag ' + staat.dag + ' (' + datumTijd(Date.now()) + ')';
+  if (navigator.share) {
+    try { await navigator.share({ title: titel, text: titel, url }); $('bewaarLaag').hidden = true; return; } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    $('bewaarLaag').hidden = true;
+    melden('Link gekopieerd. Plak hem in WhatsApp of Notities.', false);
+  } catch (e) {
+    prompt('Kopieer deze link:', url);
+  }
+};
+
+let teruggezet = null;
+function controleerLink() {
+  const m = location.hash.match(/^#s=([\w-]+)/);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname);
+  const s = uitLink(m[1]);
+  if (!s) { melden('Deze bewaarde link werkt niet (onvolledig gekopieerd?).', false); return; }
+  if (s.opgeslagen && staat.opgeslagen === s.opgeslagen) return; // is al de huidige stand
+  teruggezet = s;
+  const wie = s.spelers.map((p) => p.naam).join(', ') || 'nog geen spelers';
+  $('terugTekst').textContent = `Stand van ${s.opgeslagen ? datumTijd(s.opgeslagen) : 'eerder'}: dag ${s.dag || 1}, ${wie}.` +
+    (staat.spelers.length ? ' Het spel dat nu op deze telefoon staat wordt vervangen.' : '');
+  $('terugLaag').hidden = false;
+}
+$('terugJa').onclick = () => {
+  if (!teruggezet) return;
+  vorige = JSON.stringify(staat);
+  staat = laadAanvullen(teruggezet);
+  bewaar();
+  $('terugLaag').hidden = true;
+  $('namen').innerHTML = '';
+  $('stapel').innerHTML = '';
+  toon();
+  melden('Bewaarde stand teruggezet.', true);
+};
+window.addEventListener('hashchange', controleerLink);
+
 /* ---------- Schermen ---------- */
 function toon() {
   for (const f of ['start', 'spel', 'tellen', 'uitslag']) $(f).hidden = staat.fase !== f;
@@ -371,6 +440,7 @@ function toon() {
 }
 
 toon();
+controleerLink();
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});

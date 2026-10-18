@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <!-- 1. Start -->
@@ -45,14 +45,18 @@
   <!-- 2. Spel: inkopen bijhouden -->
   <section id="spel" class="scherm" hidden>
     <header class="kop">
-      <h1><span class="logo-munt"></span>Pokermuntjes</h1>
-      <button type="button" id="nieuwKnop" class="kopknop">Nieuw spel</button>
+      <h1><span class="logo-munt"></span><span class="titel-smal">Pokermuntjes</span></h1>
+      <div class="kopknoppen">
+        <button type="button" id="bewaarKnop" class="kopknop">Bewaren</button>
+        <button type="button" id="nieuwKnop" class="kopknop">Nieuw spel</button>
+      </div>
     </header>
     <div class="inhoud">
       <div class="pot">
         <span id="potKop">In de pot</span>
         <b id="pot"></b>
         <small id="potUitleg"></small>
+        <small id="opgeslagen" class="opgeslagen"></small>
       </div>
       <ul id="spelers" class="spelers"></ul>
     </div>
@@ -109,8 +113,32 @@
     </div>
   </div>
 
+  <!-- Stand bewaren als link -->
+  <div id="bewaarLaag" class="laag" hidden>
+    <div class="paneel">
+      <h2>Stand bewaren</h2>
+      <p class="uitleg">De stand wordt na elke tik al automatisch op deze telefoon opgeslagen. Wil je een extra kopie? Bewaar dan deze link, bijvoorbeeld in WhatsApp of Notities. Open je de link later, dan staat alles weer terug, ook op een andere telefoon.</p>
+      <div class="rij">
+        <button type="button" class="tweede" data-sluit>Sluiten</button>
+        <button type="button" id="deelKnop" class="hoofdknop">Link bewaren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stand terugzetten vanuit link -->
+  <div id="terugLaag" class="laag" hidden>
+    <div class="paneel">
+      <h2>Bewaarde stand terugzetten?</h2>
+      <p class="uitleg" id="terugTekst"></p>
+      <div class="rij">
+        <button type="button" class="tweede" data-sluit>Niet terugzetten</button>
+        <button type="button" id="terugJa" class="hoofdknop">Terugzetten</button>
+      </div>
+    </div>
+  </div>
+
   <div id="melding" class="melding" hidden><span id="meldTekst"></span><button type="button" id="ongedaan">Ongedaan</button></div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

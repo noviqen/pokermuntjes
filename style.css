@@ -172,6 +172,10 @@ button:disabled { opacity: .35; cursor: default; }
 .dag-kop small { color: var(--zacht); font-weight: 500; font-size: 14px; }
 .dag-uitslag { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 15px; font-variant-numeric: tabular-nums; }
 .dag-uitslag .plus { color: var(--plus); } .dag-uitslag .min { color: var(--min); }
+.kopknoppen { display: flex; gap: 8px; }
+.kopknoppen .kopknop { white-space: nowrap; background: #ffffff14; border-radius: 18px; padding: 8px 14px; }
+@media (max-width: 420px) { .titel-smal { display: none; } }
+.pot small.opgeslagen { display: block; margin-top: 6px; font-size: 13px; color: #8fc4a5; }
 .melding {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(92px + env(safe-area-inset-bottom));

@@ -1,6 +1,6 @@
 // Offline: eerst netwerk, anders uit cache.
-const CACHE = 'pokermuntjes-2';
-const BESTANDEN = ['./', 'index.html', 'style.css?v=2', 'app.js?v=2', 'manifest.json?v=1', 'icon-180.png?v=1', 'icon-192.png?v=1'];
+const CACHE = 'pokermuntjes-3';
+const BESTANDEN = ['./', 'index.html', 'style.css?v=3', 'app.js?v=3', 'manifest.json?v=1', 'icon-180.png?v=1', 'icon-192.png?v=1'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(BESTANDEN))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((n) => n !== CACHE).map((n) => caches.delete(n)))));
