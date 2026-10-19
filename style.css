@@ -176,6 +176,15 @@ button:disabled { opacity: .35; cursor: default; }
 .kopknoppen .kopknop { white-space: nowrap; background: #ffffff14; border-radius: 18px; padding: 8px 14px; }
 @media (max-width: 420px) { .titel-smal { display: none; } }
 .pot small.opgeslagen { display: block; margin-top: 6px; font-size: 13px; color: #8fc4a5; }
+.tel-lijst .speler { min-height: 60px; }
+.bedrag-veld { display: flex; align-items: center; gap: 6px; flex: none; }
+.bedrag-veld span { font-weight: 700; color: var(--zacht); }
+.bedrag-veld input {
+  width: 112px; height: 46px; border: 1.5px solid var(--lijn); border-radius: 12px; background: #f8faf8;
+  text-align: right; padding: 0 12px; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.bedrag-veld input:focus { outline: none; border-color: var(--plus); background: #fff; }
+.rest-knop { align-self: flex-start; color: #fff; background: #ffffff1f; border-radius: 18px; padding: 9px 16px; font-weight: 650; font-size: 15px; }
 .melding {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(92px + env(safe-area-inset-bottom));

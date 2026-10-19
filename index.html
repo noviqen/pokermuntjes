@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <!-- 1. Start -->
@@ -63,22 +63,22 @@
     <footer class="voet"><button type="button" id="naarTellen" class="hoofdknop">Einde van de dag: muntjes tellen</button></footer>
   </section>
 
-  <!-- 3. Tellen per speler -->
+  <!-- 3. Eindstand: per speler één bedrag -->
   <section id="tellen" class="scherm" hidden>
     <header class="kop">
       <button type="button" id="telTerug" class="kopknop">‹ Terug</button>
-      <span id="telStap" class="stap"></span>
+      <span class="stap">Eindstand</span>
     </header>
     <div class="inhoud">
-      <h2 id="telNaam" class="tel-naam"></h2>
-      <p class="uitleg">Hoeveel muntjes heeft <span id="telNaam2"></span> nu?</p>
-      <div id="telRijen" class="munt-rijen kaart"></div>
+      <p class="uitleg">Vul per speler in hoeveel geld aan muntjes die nu heeft.</p>
+      <ul id="telLijst" class="spelers tel-lijst"></ul>
+      <button type="button" id="restKnop" class="rest-knop" hidden></button>
       <div class="tel-som">
-        <div><span>Heeft</span><b id="telWaarde"></b></div>
-        <div><span>Nog niet geteld</span><b id="telRest"></b></div>
+        <div><span>Ingevuld</span><b id="telWaarde"></b></div>
+        <div><span>Nog te verdelen</span><b id="telRest"></b></div>
       </div>
     </div>
-    <footer class="voet"><button type="button" id="telVerder" class="hoofdknop">Volgende</button></footer>
+    <footer class="voet"><button type="button" id="telVerder" class="hoofdknop">Afrekenen</button></footer>
   </section>
 
   <!-- 4. Uitslag -->
@@ -139,6 +139,6 @@
 
   <div id="melding" class="melding" hidden><span id="meldTekst"></span><button type="button" id="ongedaan">Ongedaan</button></div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

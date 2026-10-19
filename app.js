@@ -36,9 +36,12 @@ function laadAanvullen(s) {
   s.namen = s.namen || [];
   s.aantal = s.aantal || 4;
   for (const p of s.spelers) {
-    p.stand = p.stand || { ...s.stapel };
+    // Vroeger per muntsoort bewaard, nu als bedrag in centen
+    if (p.stand == null) p.stand = waarde(s.stapel);
+    if (typeof p.stand === 'object') p.stand = waarde(p.stand);
+    if (p.eind && typeof p.eind === 'object') p.eind = waarde(p.eind) || null;
     p.inkStart = p.inkStart || 1;
-    p.eind = p.eind || leeg();
+    if (p.eind === undefined) p.eind = null;
   }
   return s;
 }
@@ -133,7 +136,7 @@ $('namen').addEventListener('input', () => { bewaarNamen(); bewaar(); });
 
 $('beginKnop').onclick = () => {
   bewaarNamen();
-  staat.spelers = staat.namen.map((naam, i) => ({ naam: naam || 'Speler ' + (i + 1), inkopen: 1, inkStart: 1, stand: { ...staat.stapel }, eind: leeg() }));
+  staat.spelers = staat.namen.map((naam, i) => ({ naam: naam || 'Speler ' + (i + 1), inkopen: 1, inkStart: 1, stand: waarde(staat.stapel), eind: null }));
   staat.dag = 1;
   staat.dagen = [];
   staat.waard = waarde(staat.stapel); // waarde van één inkoop, vast voor dit spel
@@ -157,17 +160,7 @@ function tekenSpel() {
     li.querySelector('.naam').textContent = s.naam;
     if (staat.dag > 1) {
       const vandaag = s.inkopen - s.inkStart;
-      li.querySelector('.inleg').textContent = `begint met ${euro(waarde(s.stand))}` + (vandaag ? ` · vandaag ${vandaag}× gekocht` : '');
-      const rij = document.createElement('span');
-      rij.className = 'uitdelen';
-      for (const m of [...MUNTEN].reverse()) {
-        if (!s.stand[m.c]) continue;
-        const t = document.createElement('span');
-        t.className = m.kleur;
-        t.textContent = s.stand[m.c] + '× ' + m.tekst;
-        rij.appendChild(t);
-      }
-      li.querySelector('.sp-info').appendChild(rij);
+      li.querySelector('.inleg').textContent = `begint met ${euro(s.stand)}` + (vandaag ? ` · vandaag ${vandaag}× gekocht` : '');
     } else {
       li.querySelector('.inleg').textContent = euro(s.inkopen * staat.waard) + (s.inkopen > 1 ? ` · ${s.inkopen}× gekocht` : ' · beginstapel');
     }
@@ -203,45 +196,63 @@ function melden(tekst, metOngedaan) {
   meldTimer = setTimeout(() => { $('melding').hidden = true; }, 4500);
 }
 
-$('naarTellen').onclick = () => { staat.fase = 'tellen'; staat.tel = 0; bewaar(); toon(); };
+$('naarTellen').onclick = () => { staat.fase = 'tellen'; bewaar(); toon(); };
 
-/* ---------- 3. Tellen ---------- */
+/* ---------- 3. Eindstand ---------- */
 const pot = () => staat.spelers.reduce((s, p) => s + p.inkopen, 0) * staat.waard;
+const bedragTekst = (c) => (c / 100).toFixed(2).replace('.', ',');
+// "12,50", "12.5", "€ 12" -> centen; leeg of onzin -> null
+function leesBedrag(t) {
+  t = String(t).replace(/[^\d,.]/g, '').replace(',', '.');
+  if (!t || t === '.') return null;
+  const v = parseFloat(t);
+  return Number.isFinite(v) ? Math.round(v * 100) : null;
+}
+const ingevuld = () => staat.spelers.reduce((som, p) => som + (p.eind ?? 0), 0);
 
 function tekenTellen() {
-  const i = staat.tel;
-  const s = staat.spelers[i];
-  $('telStap').textContent = `Tellen ${i + 1} van ${staat.spelers.length}`;
-  $('telNaam').textContent = s.naam;
-  $('telNaam2').textContent = s.naam;
-  const rijen = $('telRijen');
-  rijen.innerHTML = '';
-  for (const m of MUNTEN) {
-    rijen.appendChild(muntRij(m, s.eind[m.c] || 0, (v) => { s.eind[m.c] = v; bewaar(); tekenTelSom(); }));
-  }
-  $('telVerder').textContent = i === staat.spelers.length - 1 ? 'Klaar met tellen' : 'Volgende: ' + staat.spelers[i + 1].naam;
+  const lijst = $('telLijst');
+  lijst.innerHTML = '';
+  staat.spelers.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.className = 'speler';
+    li.innerHTML = `<div class="sp-info"><span class="naam"></span><span class="inleg"></span></div>
+      <label class="bedrag-veld"><span>€</span><input inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,00"></label>`;
+    li.querySelector('.naam').textContent = s.naam;
+    li.querySelector('.inleg').textContent = 'ingelegd ' + euro(s.inkopen * staat.waard);
+    const inp = li.querySelector('input');
+    inp.setAttribute('aria-label', 'Bedrag van ' + s.naam);
+    inp.value = s.eind == null ? '' : bedragTekst(s.eind);
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', () => { s.eind = leesBedrag(inp.value); bewaar(); tekenTelSom(); });
+    inp.addEventListener('blur', () => { inp.value = s.eind == null ? '' : bedragTekst(s.eind); });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const volgende = lijst.querySelectorAll('input')[i + 1];
+      volgende ? volgende.focus() : inp.blur();
+    });
+    lijst.appendChild(li);
+  });
   tekenTelSom();
 }
 function tekenTelSom() {
-  const s = staat.spelers[staat.tel];
-  $('telWaarde').textContent = euro(waarde(s.eind));
-  const rest = pot() - staat.spelers.reduce((som, p) => som + waarde(p.eind), 0);
+  $('telWaarde').textContent = euro(ingevuld());
+  const rest = pot() - ingevuld();
   $('telRest').textContent = euro(rest);
   $('telRest').classList.toggle('min', rest < 0);
+  // Eén speler nog leeg: rest in één tik invullen
+  const leeg = staat.spelers.filter((p) => p.eind == null);
+  const knop = $('restKnop');
+  knop.hidden = !(leeg.length === 1 && rest >= 0);
+  if (!knop.hidden) {
+    knop.textContent = `Rest (${euro(rest)}) invullen bij ${leeg[0].naam}`;
+    knop.onclick = () => { leeg[0].eind = rest; bewaar(); tekenTellen(); };
+  }
 }
 
-$('telVerder').onclick = () => {
-  if (staat.tel < staat.spelers.length - 1) { staat.tel++; bewaar(); tekenTellen(); scrollTo(0, 0); return; }
-  staat.fase = 'uitslag';
-  bewaar();
-  toon();
-};
-$('telTerug').onclick = () => {
-  if (staat.tel > 0) { staat.tel--; bewaar(); tekenTellen(); return; }
-  staat.fase = 'spel';
-  bewaar();
-  toon();
-};
+$('telVerder').onclick = () => { staat.fase = 'uitslag'; bewaar(); toon(); };
+$('telTerug').onclick = () => { staat.fase = 'spel'; bewaar(); toon(); };
 
 /* ---------- 4. Uitslag ---------- */
 // Zo min mogelijk betalingen: grootste verliezer betaalt grootste winnaar, enz.
@@ -264,7 +275,7 @@ function betalingen(saldi) {
 }
 
 function tekenUitslag() {
-  const geteld = staat.spelers.reduce((som, p) => som + waarde(p.eind), 0);
+  const geteld = ingevuld();
   const verschil = geteld - pot();
   $('verschil').hidden = verschil === 0;
   $('verschil').textContent = verschil > 0
@@ -275,7 +286,7 @@ function tekenUitslag() {
   $('morgen').disabled = verschil !== 0;
   tekenDagen(verschil === 0);
 
-  const saldi = staat.spelers.map((p) => ({ naam: p.naam, in: p.inkopen * staat.waard, eind: waarde(p.eind), saldo: waarde(p.eind) - p.inkopen * staat.waard }));
+  const saldi = staat.spelers.map((p) => ({ naam: p.naam, in: p.inkopen * staat.waard, eind: p.eind ?? 0, saldo: (p.eind ?? 0) - p.inkopen * staat.waard }));
   const lijst = $('stand');
   lijst.innerHTML = '';
   [...saldi].sort((a, b) => b.saldo - a.saldo).forEach((s) => {
@@ -308,7 +319,7 @@ function tekenUitslag() {
 }
 
 // Resultaat van vandaag per speler: eind − (begin van de dag + inkopen van vandaag)
-const dagSaldo = (p) => waarde(p.eind) - waarde(p.stand) - (p.inkopen - p.inkStart) * staat.waard;
+const dagSaldo = (p) => (p.eind ?? 0) - p.stand - (p.inkopen - p.inkStart) * staat.waard;
 
 function tekenDagen(vandaagKlopt) {
   const toon = staat.dag > 1;
@@ -339,9 +350,9 @@ $('morgen').onclick = () => {
   vorige = JSON.stringify(staat);
   staat.dagen.push({ datum: Date.now(), uitslag: staat.spelers.map(dagSaldo) });
   for (const p of staat.spelers) {
-    p.stand = { ...p.eind };
+    p.stand = p.eind ?? 0;
     p.inkStart = p.inkopen;
-    p.eind = leeg();
+    p.eind = null;
   }
   staat.dag++;
   staat.fase = 'spel';
@@ -350,7 +361,7 @@ $('morgen').onclick = () => {
   melden(`Dag ${staat.dag - 1} bewaard. Volgende keer verder met dag ${staat.dag}.`, true);
 };
 
-$('uitTerug').onclick = () => { staat.fase = 'tellen'; staat.tel = staat.spelers.length - 1; bewaar(); toon(); };
+$('uitTerug').onclick = () => { staat.fase = 'tellen'; bewaar(); toon(); };
 
 /* ---------- Nieuw spel ---------- */
 $('nieuwKnop').onclick = () => { $('nieuwLaag').hidden = false; };
