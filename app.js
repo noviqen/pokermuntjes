@@ -139,6 +139,7 @@ $('beginKnop').onclick = () => {
   staat.spelers = staat.namen.map((naam, i) => ({ naam: naam || 'Speler ' + (i + 1), inkopen: 1, inkStart: 1, stand: waarde(staat.stapel), eind: null }));
   staat.dag = 1;
   staat.dagen = [];
+  staat.tussen = null;
   staat.waard = waarde(staat.stapel); // waarde van één inkoop, vast voor dit spel
   staat.tel = 0;
   staat.fase = 'spel';
@@ -179,15 +180,21 @@ function tekenSpel() {
   const extra = totaal - staat.spelers.length;
   $('potUitleg').textContent = staat.spelers.length + ' spelers' + (extra ? ` · ${extra}× ingekocht` : '') + ' · inkoop ' + euro(staat.waard);
 
-  // Altijd zichtbaar: wie betaalt wie volgens de laatste telling
-  const geteld = staat.dag > 1;
-  const vandaagGekocht = staat.spelers.some((p) => p.inkopen > p.inkStart);
-  $('tussenKop').textContent = geteld ? `Wie betaalt wie (na dag ${staat.dag - 1})` : 'Wie betaalt wie';
-  $('tussenUitleg').textContent = geteld && vandaagGekocht ? 'Inkopen van vandaag tellen mee na de volgende telling.' : '';
-  $('tussenUitleg').hidden = !$('tussenUitleg').textContent;
-  tekenBetalen($('tussenBetalen'),
-    geteld ? betalingen(staat.spelers.map((p) => ({ naam: p.naam, saldo: p.stand - p.inkStart * staat.waard }))) : null,
-    'Nog niets geteld. Na de eerste telling zie je hier altijd wie wie moet betalen.');
+  // Altijd zichtbaar: wie betaalt wie volgens de nieuwste stand.
+  // Inkopen daarna veranderen dit niet: € 5 erin, € 5 aan muntjes erbij.
+  let saldi = null;
+  if (staat.tussen) {
+    $('tussenKop').textContent = 'Tussenstand ' + klok(staat.tussen.tijd);
+    saldi = staat.tussen.saldi;
+  } else if (staat.dag > 1) {
+    $('tussenKop').textContent = `Stand na dag ${staat.dag - 1}`;
+    saldi = staat.spelers.map((p) => p.stand - p.inkStart * staat.waard);
+  } else {
+    $('tussenKop').textContent = 'Wie betaalt wie';
+  }
+  $('tussenUitleg').hidden = true;
+  tekenBetalen($('tussenBetalen'), saldi ? betalingen(staat.spelers.map((p, i) => ({ naam: p.naam, saldo: saldi[i] }))) : null,
+    'Nog geen stand. Tik op "Tussenstand bijwerken" en vul in wat iedereen nu heeft.');
 }
 
 $('ongedaan').onclick = () => {
@@ -206,7 +213,7 @@ function melden(tekst, metOngedaan) {
   meldTimer = setTimeout(() => { $('melding').hidden = true; }, 4500);
 }
 
-$('naarTellen').onclick = () => { staat.fase = 'tellen'; bewaar(); toon(); };
+$('naarTellen').onclick = () => { staat.telModus = 'eind'; staat.fase = 'tellen'; bewaar(); toon(); };
 
 /* ---------- 3. Eindstand ---------- */
 const pot = () => staat.spelers.reduce((s, p) => s + p.inkopen, 0) * staat.waard;
@@ -221,6 +228,9 @@ function leesBedrag(t) {
 const ingevuld = () => staat.spelers.reduce((som, p) => som + (p.eind ?? 0), 0);
 
 function tekenTellen() {
+  const tussen = staat.telModus === 'tussen';
+  $('telKop').textContent = tussen ? 'Tussenstand' : 'Eindstand';
+  $('telVerder').textContent = tussen ? 'Klaar, verder spelen' : 'Afrekenen';
   const lijst = $('telLijst');
   lijst.innerHTML = '';
   staat.spelers.forEach((s, i) => {
@@ -259,9 +269,18 @@ function tekenTelSom() {
     knop.textContent = `Rest (${euro(rest)}) invullen bij ${leeg[0].naam}`;
     knop.onclick = () => { leeg[0].eind = rest; bewaar(); tekenTellen(); };
   }
+  // Alles ingevuld en klopt met de pot: dit wordt de actuele tussenstand
+  const compleet = !leeg.length && rest === 0;
+  if (compleet) {
+    staat.tussen = { tijd: Date.now(), saldi: staat.spelers.map((p) => p.eind - p.inkopen * staat.waard) };
+    bewaar();
+  }
+  tekenBetalen($('telBetalen'), compleet ? betalingen(staat.spelers.map((p, i) => ({ naam: p.naam, saldo: staat.tussen.saldi[i] }))) : null,
+    leeg.length ? 'Vul alle bedragen in, dan zie je hier wie wie betaalt.' : `Het klopt nog niet met de pot (${euro(pot())}).`);
 }
 
-$('telVerder').onclick = () => { staat.fase = 'uitslag'; bewaar(); toon(); };
+$('telVerder').onclick = () => { staat.fase = staat.telModus === 'tussen' ? 'spel' : 'uitslag'; bewaar(); toon(); };
+$('tussenKnop').onclick = () => { staat.telModus = 'tussen'; staat.fase = 'tellen'; bewaar(); toon(); };
 $('telTerug').onclick = () => { staat.fase = 'spel'; bewaar(); toon(); };
 
 /* ---------- 4. Uitslag ---------- */
@@ -369,6 +388,7 @@ $('morgen').onclick = () => {
     p.inkStart = p.inkopen;
     p.eind = null;
   }
+  staat.tussen = null;
   staat.dag++;
   staat.fase = 'spel';
   bewaar();

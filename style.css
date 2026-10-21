@@ -185,6 +185,9 @@ button:disabled { opacity: .35; cursor: default; }
 }
 .bedrag-veld input:focus { outline: none; border-color: var(--plus); background: #fff; }
 .rest-knop { align-self: flex-start; color: #fff; background: #ffffff1f; border-radius: 18px; padding: 9px 16px; font-weight: 650; font-size: 15px; }
+.kopje-rij { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.kopje-rij .kopje { margin: 0; font-size: 17px; white-space: nowrap; }
+.kopje-rij .rest-knop { flex: none; padding: 8px 14px; font-size: 14px; }
 .uitleg.klein { font-size: 14px; margin-top: -8px; }
 .melding {
   position: fixed; left: 50%; transform: translateX(-50%);
