@@ -178,6 +178,16 @@ function tekenSpel() {
   $('pot').textContent = euro(totaal * staat.waard);
   const extra = totaal - staat.spelers.length;
   $('potUitleg').textContent = staat.spelers.length + ' spelers' + (extra ? ` · ${extra}× ingekocht` : '') + ' · inkoop ' + euro(staat.waard);
+
+  // Altijd zichtbaar: wie betaalt wie volgens de laatste telling
+  const geteld = staat.dag > 1;
+  const vandaagGekocht = staat.spelers.some((p) => p.inkopen > p.inkStart);
+  $('tussenKop').textContent = geteld ? `Wie betaalt wie (na dag ${staat.dag - 1})` : 'Wie betaalt wie';
+  $('tussenUitleg').textContent = geteld && vandaagGekocht ? 'Inkopen van vandaag tellen mee na de volgende telling.' : '';
+  $('tussenUitleg').hidden = !$('tussenUitleg').textContent;
+  tekenBetalen($('tussenBetalen'),
+    geteld ? betalingen(staat.spelers.map((p) => ({ naam: p.naam, saldo: p.stand - p.inkStart * staat.waard }))) : null,
+    'Nog niets geteld. Na de eerste telling zie je hier altijd wie wie moet betalen.');
 }
 
 $('ongedaan').onclick = () => {
@@ -300,13 +310,18 @@ function tekenUitslag() {
     lijst.appendChild(li);
   });
 
-  const bet = $('betalen');
-  bet.innerHTML = '';
-  const regels = verschil === 0 ? betalingen(saldi) : [];
-  if (verschil !== 0) {
-    bet.innerHTML = '<li class="leeg">Eerst de telling kloppend maken.</li>';
-  } else if (!regels.length) {
-    bet.innerHTML = '<li class="leeg">Niemand hoeft iets te betalen.</li>';
+  tekenBetalen($('betalen'), verschil === 0 ? betalingen(saldi) : null, 'Eerst de telling kloppend maken.');
+}
+
+// Lijst "X betaalt Y € …"; regels = null -> alleen de lege-tekst tonen
+function tekenBetalen(ul, regels, leegTekst) {
+  ul.innerHTML = '';
+  if (!regels || !regels.length) {
+    const li = document.createElement('li');
+    li.className = 'leeg';
+    li.textContent = regels ? 'Niemand hoeft iets te betalen.' : leegTekst;
+    ul.appendChild(li);
+    return;
   }
   for (const r of regels) {
     const li = document.createElement('li');
@@ -314,7 +329,7 @@ function tekenUitslag() {
     li.querySelector('.van').textContent = r.van;
     li.querySelector('.aan').textContent = r.aan;
     li.querySelector('b').textContent = euro(r.bedrag);
-    bet.appendChild(li);
+    ul.appendChild(li);
   }
 }
 

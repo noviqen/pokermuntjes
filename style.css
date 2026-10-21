@@ -185,6 +185,7 @@ button:disabled { opacity: .35; cursor: default; }
 }
 .bedrag-veld input:focus { outline: none; border-color: var(--plus); background: #fff; }
 .rest-knop { align-self: flex-start; color: #fff; background: #ffffff1f; border-radius: 18px; padding: 9px 16px; font-weight: 650; font-size: 15px; }
+.uitleg.klein { font-size: 14px; margin-top: -8px; }
 .melding {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(92px + env(safe-area-inset-bottom));
