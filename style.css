@@ -189,6 +189,26 @@ button:disabled { opacity: .35; cursor: default; }
 .kopje-rij .kopje { margin: 0; font-size: 17px; white-space: nowrap; }
 .kopje-rij .rest-knop { flex: none; padding: 8px 14px; font-size: 14px; }
 .uitleg.klein { font-size: 14px; margin-top: -8px; }
+.blind-knop {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; border-radius: 16px; background: #ffffff1a; color: #fff; font-weight: 700; font-size: 16px;
+}
+.blind-knop:active { background: #ffffff29; }
+.blind-fiche {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: var(--goud); color: #2a1d00; font-size: 11px; font-weight: 900; box-shadow: inset 0 0 0 3px #fff8, 0 2px 3px #0004;
+}
+.aanwezig { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.aanwezig button {
+  min-height: 44px; padding: 0 16px; border-radius: 22px; font-weight: 650;
+  background: #e3f1e8; color: var(--plus); border: 1.5px solid #bfe0cb;
+}
+.aanwezig button[aria-pressed="false"] { background: #f2f2f2; color: #9aa39e; border-color: #e3e3e3; text-decoration: line-through; }
+.lot-uitslag { min-height: 0; text-align: center; }
+.lot-uitslag:not(:empty) { margin-top: 18px; padding: 16px; border-radius: 16px; background: #fbf4df; }
+.lot-uitslag small { display: block; color: var(--zacht); font-size: 14px; font-weight: 600; }
+.lot-uitslag b { display: block; font-size: 30px; letter-spacing: -.01em; margin-top: 2px; }
+.lot-uitslag.draait b { color: var(--zacht); }
 .melding {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(92px + env(safe-area-inset-bottom));

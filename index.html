@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <!-- 1. Start -->
@@ -58,10 +58,11 @@
         <small id="potUitleg"></small>
         <small id="opgeslagen" class="opgeslagen"></small>
       </div>
+      <button type="button" id="blindKnop" class="blind-knop"><span class="blind-fiche">BB</span><span id="blindTekst">Wie begint met de big blind?</span></button>
       <ul id="spelers" class="spelers"></ul>
       <div class="kopje-rij">
         <h2 class="kopje" id="tussenKop">Wie betaalt wie</h2>
-        <button type="button" id="tussenKnop" class="rest-knop">Tussenstand bijwerken</button>
+        <button type="button" id="tussenKnop" class="rest-knop">Bijwerken</button>
       </div>
       <p class="uitleg klein" id="tussenUitleg"></p>
       <ul id="tussenBetalen" class="betalen"></ul>
@@ -121,6 +122,20 @@
     </div>
   </div>
 
+  <!-- Loten wie begint met de big blind -->
+  <div id="blindLaag" class="laag" hidden>
+    <div class="paneel">
+      <h2>Wie begint met de big blind?</h2>
+      <p class="uitleg">Tik weg wie er nu niet aan tafel zit.</p>
+      <div id="aanwezig" class="aanwezig"></div>
+      <div id="lotUitslag" class="lot-uitslag" aria-live="polite"></div>
+      <div class="rij">
+        <button type="button" class="tweede" data-sluit>Sluiten</button>
+        <button type="button" id="lootKnop" class="hoofdknop">Loten</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Stand bewaren als link -->
   <div id="bewaarLaag" class="laag" hidden>
     <div class="paneel">
@@ -147,6 +162,6 @@
 
   <div id="melding" class="melding" hidden><span id="meldTekst"></span><button type="button" id="ongedaan">Ongedaan</button></div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

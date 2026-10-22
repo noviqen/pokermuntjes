@@ -174,6 +174,7 @@ function tekenSpel() {
     };
     lijst.appendChild(li);
   });
+  tekenBlind();
   $('opgeslagen').textContent = staat.opgeslagen ? '✓ Automatisch opgeslagen om ' + klok(staat.opgeslagen) : '';
   $('potKop').textContent = staat.dag > 1 ? `Dag ${staat.dag} · in de pot` : 'In de pot';
   $('pot').textContent = euro(totaal * staat.waard);
@@ -417,6 +418,77 @@ document.querySelectorAll('.laag').forEach((laag) => {
     if (e.target === laag || e.target.closest('[data-sluit]')) laag.hidden = true;
   });
 });
+
+/* ---------- Big blind loten ---------- */
+// Eerlijk loten met crypto, alleen onder wie er aan tafel zit (p.weg = niet aanwezig)
+const lot = (n) => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+let lotBezig = false;
+
+function tekenAanwezig() {
+  const box = $('aanwezig');
+  box.innerHTML = '';
+  staat.spelers.forEach((p) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = p.naam;
+    b.setAttribute('aria-pressed', !p.weg);
+    b.onclick = () => {
+      if (lotBezig) return;
+      p.weg = !p.weg;
+      bewaar();
+      tekenAanwezig();
+    };
+    box.appendChild(b);
+  });
+  const n = staat.spelers.filter((p) => !p.weg).length;
+  $('lootKnop').disabled = n < 2;
+  $('lootKnop').textContent = n < 2 ? 'Minstens 2 spelers' : `Loten uit ${n}`;
+}
+
+$('blindKnop').onclick = () => {
+  $('lotUitslag').innerHTML = '';
+  $('lotUitslag').className = 'lot-uitslag';
+  tekenAanwezig();
+  $('blindLaag').hidden = false;
+};
+
+$('lootKnop').onclick = () => {
+  const kandidaten = staat.spelers.filter((p) => !p.weg);
+  if (kandidaten.length < 2 || lotBezig) return;
+  const winnaar = kandidaten[lot(kandidaten.length)];
+  const uit = $('lotUitslag');
+  const klaar = () => {
+    lotBezig = false;
+    uit.className = 'lot-uitslag';
+    uit.innerHTML = '<small>Begint met de big blind</small><b></b>';
+    uit.querySelector('b').textContent = winnaar.naam;
+    staat.bigBlind = { naam: winnaar.naam, tijd: Date.now() };
+    bewaar();
+    tekenBlind();
+    $('lootKnop').textContent = 'Opnieuw loten';
+    $('lootKnop').disabled = false;
+    if (navigator.vibrate) navigator.vibrate(30);
+  };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { klaar(); return; }
+  // Namen laten rondgaan en langzaam uitlopen
+  lotBezig = true;
+  $('lootKnop').disabled = true;
+  uit.className = 'lot-uitslag draait';
+  uit.innerHTML = '<small>Loten…</small><b></b>';
+  let stap = 0, i = lot(kandidaten.length);
+  const rond = () => {
+    uit.querySelector('b').textContent = kandidaten[i++ % kandidaten.length].naam;
+    stap++;
+    if (stap < 16) setTimeout(rond, 50 + stap * stap * 2.2);
+    else klaar();
+  };
+  rond();
+};
+
+function tekenBlind() {
+  const bb = staat.bigBlind;
+  $('blindTekst').textContent = bb ? `Big blind: ${bb.naam} · opnieuw loten` : 'Wie begint met de big blind?';
+}
 
 /* ---------- Bewaren als link ---------- */
 // De hele stand gaat in het #-deel van de link; dat deel wordt nooit naar een server gestuurd.
